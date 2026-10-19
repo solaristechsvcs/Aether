@@ -5,6 +5,7 @@ import { config } from './config.js';
 import { db } from './db.js';
 import { migrate } from './schema.js';
 import { staffRoutes } from './staff.js';
+import { communityRoutes } from './community.js';
 import { hashToken, passwordHash, passwordMatches, seal, unseal } from './security.js';
 const limits = new Map();
 setInterval(() => { for (const [k,v] of limits) if(v.until < Date.now()) limits.delete(k); }, 60000).unref();
@@ -28,7 +29,7 @@ const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost'), p=url.pathname;
   if(!p.startsWith('/api/')) {
    if(req.method!=='GET') fail(405,'Method unavailable');
-   const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/staff-ui.js':['staff-ui.js','text/javascript'],'/style.css':['style.css','text/css']};
+   const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/staff-ui.js':['staff-ui.js','text/javascript'],'/community-ui.js':['community-ui.js','text/javascript'],'/style.css':['style.css','text/css']};
    if(!files[p]) fail(404,'Not found');
    res.setHeader('Content-Type',files[p][1]);return res.end(await readFile(new URL('./public/'+files[p][0],import.meta.url)));
   }
@@ -65,6 +66,7 @@ const server=http.createServer(async(req,res)=>{
   const [user]=await rows('SELECT u.id,u.username,r.role FROM sessions s JOIN users u ON u.id=s.user_id LEFT JOIN staff_roles r ON r.user_id=u.id WHERE s.token_hash=? AND s.expires_at>UTC_TIMESTAMP()',[hashToken(token)]);
   if(!user) fail(401,'Please sign in');
   if(await staffRoutes({p,req,url,user,body,text,rows,send,fail,config}))return;
+  if(await communityRoutes({p,req,url,user,body,text,rows,send,fail}))return;
   if(p==='/api/me' && req.method==='GET') return send(200,user);
   if(p==='/api/logout' && req.method==='POST') {await rows('DELETE FROM sessions WHERE token_hash=?',[hashToken(token)]);res.setHeader('Set-Cookie','aether=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return send(200,{ok:true});}
   if(p==='/api/communities' && req.method==='GET') return send(200,await rows('SELECT c.id,c.name,c.owner_id,CASE WHEN c.owner_id=? THEN c.invite ELSE NULL END AS invite FROM communities c JOIN members m ON m.community_id=c.id WHERE m.user_id=?',[user.id,user.id]));

@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { communityRoutes } from '../community.js';
+const id='a'.repeat(36),role='b'.repeat(36),member='c'.repeat(36);
+const fail=(status,message)=>{throw Object.assign(new Error(message),{status});};
+const context=overrides=>({p:'/api/community-roles/assign',req:{method:'POST'},user:{id:'actor'},body:async()=>({community:id,role,user:member,assigned:true}),text:v=>v,send:()=>{},fail,...overrides});
+test('nonmembers cannot read roster or roles',async()=>{for(const p of ['/api/members','/api/community-roles'])await assert.rejects(communityRoutes(context({p,req:{method:'GET'},url:new URL('http://test/?community='+id),rows:async()=>[]})),e=>e.status===404);});
+test('members and platform Admins cannot manage another owner's roles',async()=>{for(const p of ['/api/community-roles/save','/api/community-roles/delete','/api/community-roles/assign']){let calls=0;await assert.rejects(communityRoutes(context({p,user:{id:'actor',role:'Admin'},rows:async()=>{calls++;return [{id,owner_id:'other'}];}})),e=>e.status===403);assert.equal(calls,1);}});
+test('cross-community role or nonmember assignment is denied without writes',async()=>{let calls=0;await assert.rejects(communityRoutes(context({rows:async sql=>{calls++;assert.ok(sql.startsWith('SELECT'));return calls===1?[{id,owner_id:'actor'}]:[];}})),e=>e.status===404);assert.equal(calls,2);});
+test('owner can assign and remove a community role with scoped identifiers',async()=>{for(const assigned of [true,false]){const writes=[];await communityRoutes(context({body:async()=>({community:id,role,user:member,assigned}),rows:async(sql,args)=>{if(sql.startsWith('SELECT'))return [{id,owner_id:'actor'}];writes.push({sql,args});return {};}}));assert.equal(writes.length,1);assert.deepEqual(writes[0].args,[id,member,role]);assert.ok(writes[0].sql.startsWith(assigned?'INSERT IGNORE':'DELETE'));}});
+test('invalid role colors are rejected before write',async()=>{await assert.rejects(communityRoutes(context({p:'/api/community-roles/save',body:async()=>({community:id,name:'Team',color:'invalid'}),rows:async()=>[{id,owner_id:'actor'}]})),e=>e.status===400);});

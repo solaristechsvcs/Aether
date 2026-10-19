@@ -1,5 +1,13 @@
 # Aether
 
+## Community members and roles
+
+The right sidebar lists community members, platform staff badges, community ownership and assigned colored community roles. Click a username for its profile. Rosters refresh every 15 seconds. On narrower screens use the **Members** button in the chat header to open or close the roster.
+
+Community owners use **Manage community roles** to create roles with a name and color, edit them or delete them. Use **Edit roles** under a member to assign or remove multiple roles. Deleting a role removes its assignments. Roles apply only within their community and currently provide member labels, not channel permissions. Platform staff roles remain separate; staff investigation access does not grant member or role-management access.
+
+Update Wisp and restart to create the new `community_roles` and `member_roles` tables automatically. If automatic migrations are disabled, import the updated schema.sql before using this feature. No changes to existing tables or message keys are required.
+
 ## Platform staff and reports
 
 Update the repository files and restart on Wisp. Automatic schema setup adds `staff_roles`, `reports`, and `staff_audit` without modifying existing tables. If autoMigrate is disabled, import the updated schema.sql or run `npm run migrate`.

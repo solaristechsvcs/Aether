@@ -41,3 +41,15 @@ CREATE TABLE IF NOT EXISTS staff_audit (
  action VARCHAR(40) NOT NULL, target_id CHAR(36) NOT NULL, details TEXT NOT NULL,
  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS community_roles (
+ id CHAR(36) PRIMARY KEY, community_id CHAR(36) NOT NULL,
+ name VARCHAR(40) NOT NULL, color CHAR(7) NOT NULL DEFAULT '#a392ff',
+ UNIQUE(community_id,name), UNIQUE(community_id,id),
+ FOREIGN KEY(community_id) REFERENCES communities(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS member_roles (
+ community_id CHAR(36) NOT NULL, user_id CHAR(36) NOT NULL, role_id CHAR(36) NOT NULL,
+ PRIMARY KEY(community_id,user_id,role_id),
+ FOREIGN KEY(community_id,user_id) REFERENCES members(community_id,user_id) ON DELETE CASCADE,
+ FOREIGN KEY(community_id,role_id) REFERENCES community_roles(community_id,id) ON DELETE CASCADE
+);

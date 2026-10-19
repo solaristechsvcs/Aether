@@ -4,6 +4,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { config } from './config.js';
 import { db } from './db.js';
 import { migrate } from './schema.js';
+import { staffRoutes } from './staff.js';
 import { hashToken, passwordHash, passwordMatches, seal, unseal } from './security.js';
 const limits = new Map();
 setInterval(() => { for (const [k,v] of limits) if(v.until < Date.now()) limits.delete(k); }, 60000).unref();
@@ -27,7 +28,7 @@ const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost'), p=url.pathname;
   if(!p.startsWith('/api/')) {
    if(req.method!=='GET') fail(405,'Method unavailable');
-   const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css']};
+   const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/staff-ui.js':['staff-ui.js','text/javascript'],'/style.css':['style.css','text/css']};
    if(!files[p]) fail(404,'Not found');
    res.setHeader('Content-Type',files[p][1]);return res.end(await readFile(new URL('./public/'+files[p][0],import.meta.url)));
   }
@@ -57,11 +58,13 @@ const server=http.createServer(async(req,res)=>{
    await rows('DELETE FROM sessions WHERE expires_at < UTC_TIMESTAMP()');
    await rows('INSERT INTO sessions VALUES(?,?,DATE_ADD(UTC_TIMESTAMP(),INTERVAL 7 DAY))',[hashToken(token),user.id]);
    res.setHeader('Set-Cookie',`aether=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${config.secureCookies?'; Secure':''}`);
-   return send(200,{id:user.id,username:user.username});
+   const [staff]=await rows('SELECT role FROM staff_roles WHERE user_id=?',[user.id]);
+   return send(200,{id:user.id,username:user.username,role:staff?.role||null});
   }
   const token=(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('aether='))?.slice(7)||'';
-  const [user]=await rows('SELECT u.id,u.username FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>UTC_TIMESTAMP()',[hashToken(token)]);
+  const [user]=await rows('SELECT u.id,u.username,r.role FROM sessions s JOIN users u ON u.id=s.user_id LEFT JOIN staff_roles r ON r.user_id=u.id WHERE s.token_hash=? AND s.expires_at>UTC_TIMESTAMP()',[hashToken(token)]);
   if(!user) fail(401,'Please sign in');
+  if(await staffRoutes({p,req,url,user,body,text,rows,send,fail,config}))return;
   if(p==='/api/me' && req.method==='GET') return send(200,user);
   if(p==='/api/logout' && req.method==='POST') {await rows('DELETE FROM sessions WHERE token_hash=?',[hashToken(token)]);res.setHeader('Set-Cookie','aether=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return send(200,{ok:true});}
   if(p==='/api/communities' && req.method==='GET') return send(200,await rows('SELECT c.id,c.name,c.owner_id,CASE WHEN c.owner_id=? THEN c.invite ELSE NULL END AS invite FROM communities c JOIN members m ON m.community_id=c.id WHERE m.user_id=?',[user.id,user.id]));
@@ -76,7 +79,7 @@ const server=http.createServer(async(req,res)=>{
   if(p==='/api/channels' && req.method==='POST') {const b=await body(req);const [c]=await rows('SELECT id FROM communities WHERE id=? AND owner_id=?',[text(b.community,36,36),user.id]);if(!c)fail(403,'Only the owner can create channels');const id=randomUUID();await rows('INSERT INTO channels VALUES(?,?,?)',[id,c.id,text(b.name,1,40)]);return send(201,{id});}
   if(p==='/api/messages' && req.method==='GET') {
    const channel=url.searchParams.get('channel')||'';await channelAccess(channel,user.id);
-   const result=await rows('SELECT m.id,m.ciphertext,m.created_at,u.username FROM messages m JOIN users u ON u.id=m.user_id WHERE m.channel_id=? ORDER BY m.id DESC LIMIT 100',[channel]);
+   const result=await rows('SELECT m.id,m.ciphertext,m.created_at,u.id AS user_id,u.username,s.role FROM messages m JOIN users u ON u.id=m.user_id LEFT JOIN staff_roles s ON s.user_id=u.id WHERE m.channel_id=? ORDER BY m.id DESC LIMIT 100',[channel]);
    return send(200,result.reverse().map(({ciphertext,...m})=>({...m,content:unseal(ciphertext,config.messageKey)})));
   }
   if(p==='/api/messages' && req.method==='POST') {const b=await body(req);await channelAccess(text(b.channel,36,36),user.id);await rows('INSERT INTO messages(channel_id,user_id,ciphertext) VALUES(?,?,?)',[b.channel,user.id,seal(text(b.content,1,4000),config.messageKey)]);return send(201,{ok:true});}

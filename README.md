@@ -1,5 +1,17 @@
 # Aether
 
+## Platform staff and reports
+
+Update the repository files and restart on Wisp. Automatic schema setup adds `staff_roles`, `reports`, and `staff_audit` without modifying existing tables. If autoMigrate is disabled, import the updated schema.sql or run `npm run migrate`.
+
+Create your account normally, then run `node staff-admin.js YOUR_USERNAME` once from the Wisp console (or a shell with access to the container). This grants the first platform Admin to an existing account only; the command refuses when an Admin already exists. Sign out and sign in again. Keep MAIN_FILE as server.js. Admins use **Manage staff** to assign Moderator, Admin or remove a role by existing username. Users cannot assign their own roles; Admins cannot change their own role from this panel.
+
+Members use **Report community** to submit an encrypted-at-rest reason. Staff use **Staff reports** to review reports, investigate the reported community's channels and latest 100 messages, and resolve reports. Investigation is read-only and requires an open report on every request. It does not add staff to membership or grant posting, channel editing, invite visibility or access to other communities. Resolving the final open report removes investigation access for that community. Existing membership still grants ordinary membership access. Information already read cannot be recalled from a browser.
+
+Admins can inspect the **Staff audit log** (latest 200 entries); queue access, investigation reads, role changes and resolutions are logged. This database log is not tamper-proof against database operators. The report queue shows the latest 100 reports. A reporter can submit at most five reports per hour. Platform staff roles are separate from community ownership. Profile and chat badges are derived from server-side roles: a violet star-shield for Admin and a teal check-shield for Moderator. No badge or client value grants authorization.
+
+This feature does not grant access to future E2EE conversations. Reporting encrypted conversations will require explicit user-submitted evidence.
+
 Browser-based community chat foundation for local development and Wisp testing. Node.js 22+ and MySQL 8+. No build step; Wisp entrypoint is **server.js**.
 
 ## Run locally

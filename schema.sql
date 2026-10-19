@@ -25,3 +25,19 @@ CREATE TABLE IF NOT EXISTS messages (
  INDEX(channel_id,id), FOREIGN KEY(channel_id) REFERENCES channels(id) ON DELETE CASCADE,
  FOREIGN KEY(user_id) REFERENCES users(id)
 );
+CREATE TABLE IF NOT EXISTS staff_roles (
+ user_id CHAR(36) PRIMARY KEY, role ENUM('Moderator','Admin') NOT NULL,
+ FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS reports (
+ id CHAR(36) PRIMARY KEY, community_id CHAR(36) NOT NULL, reporter_id CHAR(36) NOT NULL,
+ reason TEXT NOT NULL, status ENUM('open','resolved') NOT NULL DEFAULT 'open',
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, resolved_by CHAR(36), resolved_at DATETIME,
+ INDEX(community_id,status), FOREIGN KEY(community_id) REFERENCES communities(id),
+ FOREIGN KEY(reporter_id) REFERENCES users(id)
+);
+CREATE TABLE IF NOT EXISTS staff_audit (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, actor_id CHAR(36) NOT NULL,
+ action VARCHAR(40) NOT NULL, target_id CHAR(36) NOT NULL, details TEXT NOT NULL,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

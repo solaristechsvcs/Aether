@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { config } from './config.js';
 import { db } from './db.js';
+import { migrate } from './schema.js';
 import { hashToken, passwordHash, passwordMatches, seal, unseal } from './security.js';
 const limits = new Map();
 setInterval(() => { for (const [k,v] of limits) if(v.until < Date.now()) limits.delete(k); }, 60000).unref();
@@ -83,6 +84,10 @@ const server=http.createServer(async(req,res)=>{
  } catch(e) {if(!e.status) console.error('Request failed:',e.code||e.name);send(e.status||500,{error:e.status?e.message:'Server error'});}
 });
 server.requestTimeout=15000;server.headersTimeout=10000;
-server.listen(config.port,config.host,()=>console.log(`Aether listening on ${config.host}:${config.port}`));
+try {
+ if(config.autoMigrate!==false) { await migrate(db); console.log('Aether MySQL tables ready.'); }
+ else await db.query('SELECT 1');
+ server.listen(config.port,config.host,()=>console.log(`Aether listening on ${config.host}:${config.port} - public URL: ${config.origin}`));
+} catch(e) {console.error('Aether database startup failed ('+(e.code||e.name)+'). Check the MySQL connection, database permissions and remote access in your private config.');await db.end();process.exit(1);}
 async function stop(){server.close(async()=>{await db.end();process.exit(0);});setTimeout(()=>process.exit(1),10000).unref();}
 process.on('SIGTERM',stop);process.on('SIGINT',stop);

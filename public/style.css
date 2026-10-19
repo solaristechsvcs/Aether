@@ -7,3 +7,22 @@
 #workspace{grid-template-columns:210px 190px minmax(280px,1fr) 240px}#member-panel{padding:24px 16px;overflow:auto;border-left:1px solid #262636;border-right:0;background:#131420;min-width:0}#member-panel h2{margin-top:0}#member-panel>.secondary{width:100%;font-size:12px;margin-bottom:16px}.community-member{padding:14px 0;border-bottom:1px solid #242432;overflow-wrap:anywhere}.community-member .profile-link{text-align:left;line-height:1.8}.member-owner{display:block;font-size:10px;color:#b3a5d6}.member-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.community-role{font-size:11px;padding:3px 7px;background:#252536;border:1px solid currentColor;border-radius:12px;overflow-wrap:anywhere}.member-edit{background:transparent;color:#9996b6;padding:5px 0;font-size:11px}.role-editor-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #383346}.role-editor-row .community-role{margin-right:auto}.role-checkbox{display:flex;align-items:center;gap:12px;padding:10px}.role-checkbox input{width:auto;margin:0}.members-toggle{display:none}input[type=color]{height:45px;padding:4px;width:80px}#community-dialog form{margin:20px 0}
 @media(max-width:1100px){#workspace{grid-template-columns:170px 160px minmax(260px,1fr)}#member-panel{display:none}.members-toggle{display:block}#member-panel.expanded{display:block;position:fixed;right:0;top:90px;bottom:0;width:260px;z-index:3;box-shadow:-10px 0 30px #0008}}
 @media(max-width:800px){#workspace{grid-template-columns:140px minmax(0,1fr)}#member-panel{grid-column:auto}.chat header{flex-wrap:wrap}.members-toggle{font-size:11px;padding:7px}.chat{min-width:0}nav{min-width:0}}
+/* Keep navigation and composition in view; scroll message history independently. */
+#workspace{height:100dvh;min-height:0;overflow:hidden;grid-template-rows:minmax(0,1fr)}
+#workspace>nav,#workspace>aside{min-height:0;overflow-y:auto}
+.chat{min-height:0;overflow:hidden}
+.chat>header,.chat>.notice,.chat>#composer,.chat>footer{flex-shrink:0}
+#messages{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable}
+#composer{min-width:0}
+#composer textarea{min-width:0}
+@media(max-width:800px){
+ #workspace{height:100dvh;min-height:0;grid-template-rows:minmax(100px,24dvh) minmax(0,1fr)}
+ #workspace>nav{grid-column:1;grid-row:1/3}
+ #workspace>aside:not(#member-panel){grid-column:2;grid-row:1;overflow-y:auto}
+ .chat{grid-column:2;grid-row:2;min-height:0}
+ .chat .notice{max-height:15dvh;overflow-y:auto}
+ #composer{margin:8px}
+ #composer textarea{max-height:20dvh}
+ .chat footer{padding:0 8px 8px}
+}
+

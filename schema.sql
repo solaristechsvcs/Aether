@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS messages (
  FOREIGN KEY(user_id) REFERENCES users(id)
 );
 CREATE TABLE IF NOT EXISTS staff_roles (
- user_id CHAR(36) PRIMARY KEY, role ENUM('Moderator','Admin') NOT NULL,
+ user_id CHAR(36) PRIMARY KEY, role ENUM('Moderator','Admin','Owner') NOT NULL,
  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS reports (

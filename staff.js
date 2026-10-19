@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { seal, unseal } from './security.js';
-export const isStaff = role => ['Moderator','Admin'].includes(role);
+export const isStaff = role => ['Moderator','Admin','Owner'].includes(role);
+export function canManageRole(actor, current, next) {
+ if(!['Moderator','Admin','None'].includes(next)||current==='Owner')return false;
+ if(actor==='Owner')return true;
+ return actor==='Admin' && !['Admin','Owner'].includes(current) && ['Moderator','None'].includes(next);
+}
 export const canInvestigate = (role, status) => isStaff(role) && status==='open';
 export async function staffRoutes({p,req,url,user,body,text,rows,send,fail,config}) {
  const audit=async(action,target,details='')=>rows('INSERT INTO staff_audit(actor_id,action,target_id,details) VALUES(?,?,?,?)',[user.id,action,target,details]);
@@ -35,10 +40,11 @@ export async function staffRoutes({p,req,url,user,body,text,rows,send,fail,confi
   const b=await body(req),id=text(b.report,36,36);await audit('resolve_report',id);
   const result=await rows("UPDATE reports SET status='resolved',resolved_by=?,resolved_at=UTC_TIMESTAMP() WHERE id=? AND status='open'",[user.id,id]);if(!result.affectedRows)fail(409,'Report already resolved or unavailable');send(200,{ok:true});return true;
  }
- if(user.role!=='Admin')fail(403,'Admin access required');
+ if(!['Admin','Owner'].includes(user.role))fail(403,'Admin access required');
  if(p==='/api/staff/role'&&req.method==='POST') {
   const b=await body(req),username=text(b.username,3,32).toLowerCase();if(!['Moderator','Admin','None'].includes(b.role))fail(400,'Invalid role');
-  const [target]=await rows('SELECT id FROM users WHERE username=?',[username]);if(!target)fail(404,'Account unavailable');if(target.id===user.id)fail(403,'Ask another administrator to change your role');
+  const [target]=await rows('SELECT u.id,s.role FROM users u LEFT JOIN staff_roles s ON s.user_id=u.id WHERE u.username=?',[username]);if(!target)fail(404,'Account unavailable');if(target.id===user.id)fail(403,'You cannot change your own staff role');
+  if(!canManageRole(user.role,target.role,b.role))fail(403,'Only the Owner can manage Admins. Owner accounts cannot be changed here.');
   await audit('change_staff_role',target.id,b.role);
   if(b.role==='None')await rows('DELETE FROM staff_roles WHERE user_id=?',[target.id]);else await rows('INSERT INTO staff_roles(user_id,role) VALUES(?,?) ON DUPLICATE KEY UPDATE role=?',[target.id,b.role,b.role]);
   send(200,{ok:true});return true;

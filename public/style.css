@@ -2,3 +2,4 @@
 /* Aether staff insignia: violet star-shield Admin and teal check-shield Moderator. */
 .staff-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;border-radius:6px;padding:3px 6px;margin-left:7px;background:#34294e;color:#d6baff;vertical-align:middle}.staff-badge svg{width:18px;height:18px;fill:currentColor}.staff-badge.moderator{color:#86ead9;background:#193b3c}.staff-panel{width:min(850px,94vw);max-height:85vh;overflow:auto}.staff-panel p{white-space:pre-wrap;overflow-wrap:anywhere}.report-card{border-top:1px solid #494057;margin-top:18px;padding:12px}.report-card button{margin:4px}.investigation{background:#11121d;padding:14px;margin-top:12px}.staff-panel select{background:#242437;color:white;padding:12px;margin:10px}.account{max-height:65vh;overflow:auto}
 .profile-link{background:transparent;color:#c9bbfc;padding:0;font-size:14px}.profile-link:hover{text-decoration:underline}
+.staff-badge.owner{color:#ffe29b;background:#4a3820}

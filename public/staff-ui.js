@@ -1,8 +1,8 @@
 export function badge(role) {
- if(!['Admin','Moderator'].includes(role))return document.createTextNode('');
+ if(!['Admin','Moderator','Owner'].includes(role))return document.createTextNode('');
  const span=document.createElement('span');span.className='staff-badge '+role.toLowerCase();span.title='Aether '+role;span.setAttribute('aria-label','Aether '+role);
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');
- const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',role==='Admin'?'M12 1 21 5v7c0 5-5 9-9 11-4-2-9-6-9-11V5Z M12 6l1.6 3.5 3.9.5-2.9 2.7.8 3.8-3.4-1.9-3.4 1.9.8-3.8L6.5 10l3.9-.5Z':'M12 1 21 5v7c0 5-5 9-9 11-4-2-9-6-9-11V5Z M7 12l3 3 7-7-1.5-1.5-5.5 5.5-1.5-1.5Z');path.setAttribute('fill-rule','evenodd');svg.append(path);span.append(svg,document.createTextNode(role));return span;
+ const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',role!=='Moderator'?'M12 1 21 5v7c0 5-5 9-9 11-4-2-9-6-9-11V5Z M12 6l1.6 3.5 3.9.5-2.9 2.7.8 3.8-3.4-1.9-3.4 1.9.8-3.8L6.5 10l3.9-.5Z':'M12 1 21 5v7c0 5-5 9-9 11-4-2-9-6-9-11V5Z M7 12l3 3 7-7-1.5-1.5-5.5 5.5-1.5-1.5Z');path.setAttribute('fill-rule','evenodd');svg.append(path);span.append(svg,document.createTextNode(role));return span;
 }
 export async function showProfile(api,id) {
  const p=await api('profile?id='+encodeURIComponent(id));
@@ -27,8 +27,8 @@ export function setupStaff({user,api,ask,guarded,button,community,status}) {
    }box.append(card);
   }
  });
- if(user.role==='Admin') {
-  add('Manage staff',async()=>{const box=show('Staff accounts');const form=document.createElement('form');const label=document.createElement('label');label.textContent='Existing account username';const input=document.createElement('input');input.required=true;input.maxLength=32;label.append(input);const select=document.createElement('select');select.setAttribute('aria-label','Staff role');for(const role of ['Moderator','Admin','None']){const o=document.createElement('option');o.value=role;o.textContent=role==='None'?'Remove staff role':role;select.append(o);}const submit=document.createElement('button');submit.textContent='Save role';form.append(label,select,submit);form.onsubmit=guarded(async e=>{e.preventDefault();await api('staff/role',{username:input.value,role:select.value});status('Staff role updated.');});box.append(form);});
+ if(['Admin','Owner'].includes(user.role)) {
+  add('Manage staff',async()=>{const box=show('Staff accounts');const form=document.createElement('form');const label=document.createElement('label');label.textContent='Existing account username';const input=document.createElement('input');input.required=true;input.maxLength=32;label.append(input);const select=document.createElement('select');select.setAttribute('aria-label','Staff role');for(const role of (user.role==='Owner'?['Moderator','Admin','None']:['Moderator','None'])){const o=document.createElement('option');o.value=role;o.textContent=role==='None'?'Remove staff role':role;select.append(o);}const submit=document.createElement('button');submit.textContent='Save role';form.append(label,select,submit);form.onsubmit=guarded(async e=>{e.preventDefault();await api('staff/role',{username:input.value,role:select.value});status('Staff role updated.');});box.append(form);});
   add('Staff audit log',async()=>{const list=await api('staff/audit'),box=show('Staff audit log');for(const a of list){const p=document.createElement('p');p.textContent=new Date(a.created_at).toLocaleString()+' � '+a.actor+' � '+a.action+' � '+a.target_id+' '+a.details;box.append(p);}});
  }
 }

@@ -19,6 +19,20 @@ $('join-community').onclick=guarded(async()=>{const invite=await ask('Join your 
 $('create-channel').onclick=guarded(async()=>{const name=await ask('Create a text channel','Channel name');if(name){await api('channels',{community:community.id,name});await loadChannels();}});
 $('invite').onclick=()=>{status('Invite code: '+community.invite);};
 $('logout').onclick=guarded(async()=>{await api('logout',{});location.reload();});
-$('composer').onsubmit=guarded(async e=>{e.preventDefault();const content=$('message').value;await api('messages',{channel:channel.id,content});$('message').value='';await messages();$('messages').scrollTop=$('messages').scrollHeight;});
+let sending=false;
+$('message').addEventListener('keydown',e=>{
+ if(e.key!=='Enter'||e.shiftKey||e.isComposing||e.keyCode===229)return;
+ e.preventDefault();
+ if(!e.repeat&&!sending&&channel&&$('message').value.trim())$('composer').requestSubmit();
+});
+$('message').setAttribute('aria-description','Enter to send. Shift+Enter for a new line.');
+$('composer').onsubmit=guarded(async e=>{
+ e.preventDefault();const content=$('message').value;
+ if(sending||!channel||!content.trim())return;
+ sending=true;
+ try{await api('messages',{channel:channel.id,content});if($('message').value===content)$('message').value='';await messages();$('messages').scrollTop=$('messages').scrollHeight;}
+ finally{sending=false;}
+});
 let polling=false;setInterval(async()=>{if(polling||document.hidden)return;polling=true;try{await messages();}catch(e){status(e.message);}finally{polling=false;}},3000);
 try{await enter(await api('me'));}catch(e){if(e.message!=='Please sign in')status(e.message);}
+

@@ -29,7 +29,7 @@ const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost'), p=url.pathname;
   if(!p.startsWith('/api/')) {
    if(req.method!=='GET') fail(405,'Method unavailable');
-   const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/staff-ui.js':['staff-ui.js','text/javascript'],'/community-ui.js':['community-ui.js','text/javascript'],'/style.css':['style.css','text/css']};
+   const files={'/staff':['staff.html','text/html'],'/staff/':['staff.html','text/html'],'/staff-page.js':['staff-page.js','text/javascript'],'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/staff-ui.js':['staff-ui.js','text/javascript'],'/community-ui.js':['community-ui.js','text/javascript'],'/style.css':['style.css','text/css']};
    if(!files[p]) fail(404,'Not found');
    res.setHeader('Content-Type',files[p][1]);return res.end(await readFile(new URL('./public/'+files[p][0],import.meta.url)));
   }

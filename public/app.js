@@ -35,4 +35,3 @@ $('composer').onsubmit=guarded(async e=>{
 });
 let polling=false;setInterval(async()=>{if(polling||document.hidden)return;polling=true;try{await messages();}catch(e){status(e.message);}finally{polling=false;}},3000);
 try{await enter(await api('me'));}catch(e){if(e.message!=='Please sign in')status(e.message);}
-
